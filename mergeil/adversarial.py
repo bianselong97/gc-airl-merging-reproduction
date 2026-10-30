@@ -128,7 +128,8 @@ def train(model: str, train_scenes, val_scenes, cfg: Config, out_dir: str, seed:
     vf = ValueNet(n_obs, ac.pi_hidden)
     vf.obs_norm.fit(e["obs"])
     ppo = PPO(pi, vf, ac)
-    env = MergeEnv(train_scenes, cfg.env, use_goal=spec["goal"], seed=seed)
+    env = MergeEnv(train_scenes, cfg.env, use_goal=spec["goal"], seed=seed,
+                   terminate_on_collision=cfg.env.train_terminate_on_collision)
 
     disc, d_opt, rl_reward = None, None, None
     if spec["disc"] == "gail":

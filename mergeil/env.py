@@ -10,7 +10,8 @@
 动作：二维加速度 (ax, ay)。车辆按论文 Eq.1 用欧拉法更新（位置用当前步速度）。
 周围车辆按真实轨迹回放；cfg.reactive=True 时 ego 正后方的车改用 IDM（本仓库的扩展，论文没有）。
 
-回合结束：碰撞（失败），或到达专家轨迹的最后一步。
+回合结束：碰撞（失败），或到达专家轨迹的最后一步。训练时可设 terminate_on_collision=False，
+碰撞后继续行驶到专家轨迹结束（回合长度固定），避免负奖励下“早撞早结束”的生存偏置；碰撞仍记为失败。
 成功：越过车道线 goal_offset (1 m) 且全程未碰撞（论文 Eq.16）。
 """
 from __future__ import annotations
@@ -116,10 +117,12 @@ def expert_transitions(scenes, cfg: EnvConfig, use_goal: bool):
 
 
 class MergeEnv:
-    def __init__(self, scenes, cfg: EnvConfig, use_goal: bool = False, seed: int = 0):
+    def __init__(self, scenes, cfg: EnvConfig, use_goal: bool = False, seed: int = 0,
+                 terminate_on_collision: bool = True):
         self.scenes = scenes
         self.cfg = cfg
         self.use_goal = use_goal
+        self.terminate_on_collision = terminate_on_collision
         self.rng = np.random.default_rng(seed)
         self.low = np.array([cfg.ax_bounds[0], cfg.ay_bounds[0]], np.float32)
         self.high = np.array([cfg.ax_bounds[1], cfg.ay_bounds[1]], np.float32)
@@ -200,11 +203,11 @@ class MergeEnv:
         meta = self.scene.meta
         goal_now = (not self.reached) and self.state[1] >= meta["lane_line_y"] + self.cfg.goal_offset
         self.reached |= goal_now
-        self.collided = collides(self.state, self.others)
-        terminated = self.collided
+        self.collided |= collides(self.state, self.others)
+        terminated = self.collided and self.terminate_on_collision
         truncated = (not terminated) and self.k >= self.scene.horizon
         info = {"collision": self.collided, "goal_now": bool(goal_now),
-                "success": bool(truncated and self.reached)}
+                "success": bool(truncated and self.reached and not self.collided)}
         return self._obs(), terminated, truncated, info
 
     def trajectory(self) -> np.ndarray:
