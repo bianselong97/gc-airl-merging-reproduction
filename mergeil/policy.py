@@ -22,7 +22,9 @@ class Normalizer(nn.Module):
 
     def fit(self, x: torch.Tensor):
         self.mean.copy_(x.mean(0))
-        self.std.copy_(x.std(0).clamp_min(1e-3))
+        std = x.std(0)
+        # 近似常数的特征（如合成数据中的目标横向位置）不缩放，否则偏离常数的输入会被放大成极端值
+        self.std.copy_(torch.where(std < 1e-2, torch.ones_like(std), std))
         return self
 
     def forward(self, x):

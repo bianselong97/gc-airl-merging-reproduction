@@ -55,6 +55,7 @@ class AdvConfig:
     gail_reward: str = "logD"      # 论文：GAIL 以 log D 为奖励；可选 "-log(1-D)"
     airl_reward: str = "c"         # 论文 Eq.9：r = c(s,a,g) (+ r_goal)；可选 "f-logpi"
     goal_reward: float = 1.0       # 论文：到达中间目标奖励 1
+    disc_goal: bool = True         # 论文：判别器的奖励估计器 c(s,a,g) 也输入目标；False 时只有策略看到目标
     beta_lr: float = 1e-2          # 置信度参数的学习率（论文未给出）
     inner_lr: float = 1e-2         # 双层优化中内层一步更新的步长（论文未给出）
     rank_eps: float = 1e-5         # 论文 Eq.10 的 ε

@@ -38,6 +38,8 @@ def main():
     for p in args.models:
         pi, use_goal, model = load_policy(p)
         name = NAMES.get(model, model)
+        if name in table:  # 同类模型的多个检查点，用所在目录名区分
+            name = f"{name}[{os.path.basename(os.path.dirname(os.path.abspath(p)))}]"
         table[name], per_traj[name] = evaluate(scenes, cfg, pi, use_goal, n_runs=args.n_runs or None,
                                                deterministic=args.deterministic)
 

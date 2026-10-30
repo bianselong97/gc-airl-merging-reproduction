@@ -58,16 +58,17 @@ class GAILDisc(nn.Module):
 
 
 class AIRLDisc(nn.Module):
-    def __init__(self, pi: GaussianPolicy, hidden, gamma: float):
+    def __init__(self, pi: GaussianPolicy, hidden, gamma: float, use_goal: bool = True):
         super().__init__()
         self.obs_norm, self.act_norm = pi.obs_norm, pi.act_norm
         n_obs, n_act = pi.obs_norm.mean.numel(), pi.act_norm.mean.numel()
-        self.c = mlp(n_obs + n_act, 1, hidden)   # 奖励估计器 c(s, a, g)
-        self.h = mlp(BASE_DIM, 1, hidden)        # 势函数 h(s)，只看状态不看目标
+        self.n_c_obs = n_obs if use_goal else BASE_DIM
+        self.c = mlp(self.n_c_obs + n_act, 1, hidden)  # 奖励估计器 c(s, a, g)
+        self.h = mlp(BASE_DIM, 1, hidden)              # 势函数 h(s)，只看状态不看目标
         self.gamma = gamma
 
     def reward_c(self, obs, act, c_params=None):
-        x = torch.cat([self.obs_norm(obs), self.act_norm(act)], -1)
+        x = torch.cat([self.obs_norm(obs)[:, :self.n_c_obs], self.act_norm(act)], -1)
         out = functional_call(self.c, c_params, (x,)) if c_params is not None else self.c(x)
         return out.squeeze(-1)
 
@@ -136,7 +137,7 @@ def train(model: str, train_scenes, val_scenes, cfg: Config, out_dir: str, seed:
     if spec["disc"] == "gail":
         disc = GAILDisc(pi, ac.d_hidden)
     elif spec["disc"] == "airl":
-        disc = AIRLDisc(pi, ac.d_hidden, ac.gamma)
+        disc = AIRLDisc(pi, ac.d_hidden, ac.gamma, use_goal=ac.disc_goal)
     else:
         rl_reward = RLReward(E["obs"], train_scenes[0].dt, train_scenes[0].meta["lane_width"])
     if disc is not None:
