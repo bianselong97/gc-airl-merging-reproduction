@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+outputs/
+/data/
+*.pdf
+*.csv
+*.pkl
+*.pt
+.vscode/
+.idea/
