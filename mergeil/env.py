@@ -10,8 +10,10 @@
 动作：二维加速度 (ax, ay)。车辆按论文 Eq.1 用欧拉法更新（位置用当前步速度）。
 周围车辆按真实轨迹回放；cfg.reactive=True 时 ego 正后方的车改用 IDM（本仓库的扩展，论文没有）。
 
-回合结束：碰撞（失败），或到达专家轨迹的最后一步。训练时可设 terminate_on_collision=False，
-碰撞后继续行驶到专家轨迹结束（回合长度固定），避免负奖励下“早撞早结束”的生存偏置；碰撞仍记为失败。
+回合结束：碰撞（失败），或到达专家轨迹的最后一步。训练时可设 terminate_on_collision=False：
+碰撞后进入吸收态（观测恒为全 0），一直持续到专家轨迹长度（参考 DAC, Kostrikov et al. 2019）。
+这样回合长度固定，不会因负奖励产生“早撞早结束”的生存偏置；而专家数据中没有吸收态，
+判别器会学到吸收态很差，从而对碰撞给出学习得到的惩罚。碰撞仍记为失败。
 成功：越过车道线 goal_offset (1 m) 且全程未碰撞（论文 Eq.16）。
 """
 from __future__ import annotations
@@ -142,6 +144,8 @@ class MergeEnv:
         return self._obs()
 
     def _obs(self) -> np.ndarray:
+        if self.collided and not self.terminate_on_collision:
+            return np.zeros(obs_dim(self.use_goal), np.float32)  # 吸收态
         return observe(self.state, self.others, self.scene.meta, self.scene.goal if self.use_goal else None)
 
     def _advance_others(self, ego_prev: np.ndarray) -> np.ndarray:
@@ -189,6 +193,11 @@ class MergeEnv:
     def step(self, action):
         a = np.clip(np.asarray(action, np.float32), self.low, self.high)
         dt = self.scene.dt
+        if self.collided:  # 吸收态：车辆不再运动，只推进时间
+            self.k += 1
+            self.prev_act = a
+            truncated = self.k >= self.scene.horizon
+            return self._obs(), False, truncated, {"collision": True, "goal_now": False, "success": False}
         ego_prev = self.state.copy()
         # 论文 Eq.1：v' = v + a·dt，p' = p + v·dt
         self.state[0:2] += self.state[2:4] * dt

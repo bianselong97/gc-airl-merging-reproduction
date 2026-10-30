@@ -26,7 +26,7 @@ class EnvConfig:
     goal_offset: float = 1.0       # 论文：中间目标 = 越过车道线 1 m
     ax_bounds: tuple = (-8.0, 4.0)   # 动作截断范围（论文未说明）
     ay_bounds: tuple = (-3.0, 3.0)
-    train_terminate_on_collision: bool = False  # 训练时碰撞不提前结束回合，避免负奖励导致“主动撞车”的生存偏置
+    train_terminate_on_collision: bool = False  # False：对抗式模型训练时碰撞后进入吸收态（见 env.py），避免生存偏置
     reactive: bool = False         # 论文：周围车辆按真实轨迹回放；True 为本仓库的扩展
     react_range: float = 40.0
     idm: tuple = (33.0, 1.2, 2.0, 1.5, 2.0)

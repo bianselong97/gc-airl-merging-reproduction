@@ -128,8 +128,9 @@ def train(model: str, train_scenes, val_scenes, cfg: Config, out_dir: str, seed:
     vf = ValueNet(n_obs, ac.pi_hidden)
     vf.obs_norm.fit(e["obs"])
     ppo = PPO(pi, vf, ac)
-    env = MergeEnv(train_scenes, cfg.env, use_goal=spec["goal"], seed=seed,
-                   terminate_on_collision=cfg.env.train_terminate_on_collision)
+    # 对抗式模型的奖励可能为负，训练时用吸收态代替碰撞终止；RL 的奖励为正，碰撞终止本身就是惩罚
+    terminate = cfg.env.train_terminate_on_collision or spec["disc"] is None
+    env = MergeEnv(train_scenes, cfg.env, use_goal=spec["goal"], seed=seed, terminate_on_collision=terminate)
 
     disc, d_opt, rl_reward = None, None, None
     if spec["disc"] == "gail":
