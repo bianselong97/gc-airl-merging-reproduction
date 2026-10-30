@@ -5,7 +5,7 @@
 - [x] 下载目标论文 PDF（放在上级目录，不进仓库）
 - [x] 下载 AIRL 论文（2026，*AI for Transportation*），后续扩展用
 - [ ] **下载 NGSIM**（data.transportation.gov，“NGSIM Vehicle Trajectories”，导出包含 US-101 和 I-80 的 CSV），告诉我存放路径
-- [ ] 在 GitHub 网页上建一个空仓库（不要勾选 README/.gitignore/License），把仓库地址发给我；或者安装 `gh` 并登录
+- [x] 建 GitHub 仓库：https://github.com/bianselong97/gc-airl-merging-reproduction
 - [ ] 确定目标：演示版还是完整复现加改进
 - [ ] （不急）highD / exiD：论文没用，只在做额外迁移实验时才需要申请
 
@@ -20,8 +20,8 @@
 - [x] 评估脚本：输出论文表 2 / 表 4 格式的对比表和图
 - [x] 合成数据上的全流程冒烟测试
 
-### 进行中
-- [ ] 合成数据上完整训练 8 个模型，确认算法能学起来
+- [x] 合成数据上完整训练 8 个模型，排查并修复 3 个导致撞车的问题（生存偏置、碰撞无代价、归一化爆炸）
+- [x] 结果和调试记录写进 README
 
 ### 拿到 NGSIM 后
 - [ ] 跑 US-101 数据处理，核对汇入车辆数量（论文 164 条）和车道线位置
@@ -30,7 +30,7 @@
 - [ ] 分析和论文结果的差距，多随机种子
 
 ### 收尾
-- [ ] GitHub 仓库：git 初始化、首次提交、推送
-- [ ] 复现报告和结果图写进 README
+- [x] GitHub 仓库：git 初始化、首次提交、推送
+- [ ] NGSIM 的复现结果和图写进 README
 - [ ] 改进实验（例如用 Transformer 编码周围车辆，或对接 2026 年 AIRL 论文的可解释奖励分析）
 - [ ] 给老师汇报的幻灯片
