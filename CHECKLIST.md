@@ -39,4 +39,5 @@
 - [x] GitHub 仓库：git 初始化、首次提交、推送
 - [x] NGSIM US-101 的复现结果和图写进 README
 - [ ] 改进实验（例如用 Transformer 编码周围车辆，或对接 2026 年 AIRL 论文的可解释奖励分析）
-- [x] 给老师汇报的幻灯片（claude.ai Slides，12 页；封面的汇报人和日期待填）
+- [x] 给老师汇报的幻灯片（claude.ai Slides，15 页；封面的汇报人和日期待填）
+- [x] 仿真动画：`scripts/animate.py` 生成俯视 GIF，README 和幻灯片中放了 3 个测试场景（一个成功对比、两种失败）

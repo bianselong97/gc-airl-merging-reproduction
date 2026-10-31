@@ -108,7 +108,7 @@ mergeil/
   adversarial.py  GAIL / AIRL / G-AIRL / C-AIRL / GC-AIRL / RL
   lstm.py, bc.py  监督学习基线
   metrics.py, evaluate.py  论文指标与评估
-scripts/       prepare_data / train / evaluate
+scripts/       prepare_data / train / evaluate / animate；run_us101.sh 跑全部实验
 ```
 
 ## 结果
@@ -148,6 +148,30 @@ scripts/       prepare_data / train / evaluate
 
 和截断数据（260 个场景）上的旧结果相比，多数模型的成功率下降了：GC-AIRL 0.715 → 0.633，AIRL 0.767 → 0.640，LSTM 0.750 → 0.608，RL 0.692 → 0.460；C-AIRL 基本不变（0.672 → 0.658），GAIL 反而升高（0.557 → 0.607）。
 换成完整数据后训练集变大，测试集也换了（40 条中只有 7 条和原来相同），所以变化里有多少来自测试集更难、多少来自训练数据，目前分不开。
+
+### 仿真动画
+
+`scripts/animate.py` 让各模型在同一个测试场景上跑一次闭环仿真（用策略均值），画成俯视 GIF：
+彩色为模型控制的车，虚线框为真实司机，灰色为按真实轨迹回放的周围车辆，点线为越线 1 m 的成功判定线。下面都是种子 0 的模型。
+
+```bash
+# 各测试场景每个模型的结果（成功 / 碰撞 / 未汇入），用来挑场景
+python scripts/animate.py --scenes outputs/us101.pkl --models <A>/best.pt <B>/best.pt --summary
+python scripts/animate.py --scenes outputs/us101.pkl --models <A>/best.pt <B>/best.pt --scene 5 --dpi 100 --out docs/anim_scene5.gif
+```
+
+测试场景 5：目标奖励 30 的 GC-AIRL 找到空隙汇入；AIRL 并入目标车道时车速比后车慢、距离又近，被后车追尾。
+
+![测试场景 5](docs/anim_scene5.gif)
+
+GC-AIRL 的两种典型失败。场景 7：在加速车道里减速等空隙，后方约 15 m/s 的车追上来擦撞；
+场景 10：比真实司机开得快，一直没找到空隙，加速车道走到头也没有并入。两次碰撞都和回放车辆不会避让有关。
+
+![测试场景 7](docs/anim_scene7.gif)
+
+![测试场景 10](docs/anim_scene10.gif)
+
+种子 0 的模型在 40 个测试场景上（策略均值）：GC-AIRL（目标奖励 30）成功 29、碰撞 3、未汇入 8；AIRL 成功 25、碰撞 6、未汇入 9。
 
 ### 诊断：为什么 GC-AIRL 没有超过 AIRL
 
