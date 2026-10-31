@@ -65,6 +65,7 @@ class AdvConfig:
     rank_eps: float = 1e-5         # 论文 Eq.10 的 ε
     rank_trajs: int = 16           # 每次外层更新抽取的专家轨迹数
     score_weights: tuple = (1.0, 1.0, 5.0)  # 论文：排序得分权重 1-1-5
+    rl_goal_y_scale: float = 0.0   # RL 目标项的横向缩放 (m)，0 = 车道宽；按验证集在 1/2/3 个车道宽和整个路面宽中选出
     eval_every: int = 10
     bc_init: str = ""
 

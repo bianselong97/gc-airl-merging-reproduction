@@ -88,12 +88,16 @@ def rank_loss(r_hat_i, r_hat_j, sign, eps):
 
 
 class RLReward:
-    """论文 Eq.20：效率 + 安全 + 舒适 + 目标，各项做尺度归一化。"""
+    """论文 Eq.20：效率 + 安全 + 舒适 + 目标，各项做尺度归一化。
 
-    def __init__(self, expert_obs: np.ndarray, dt: float, lane_width: float):
+    论文没有给各项权重。目标项的横向缩放 y_scale 对结果影响很大：按车道宽缩放时并道前约为 −1.5/步，
+    车辆抢着并道、侧向剐蹭多；按 2 个车道宽及以上缩放时车辆基本不并道（见 README）。
+    """
+
+    def __init__(self, expert_obs: np.ndarray, dt: float, y_scale: float):
         self.dt = dt
         self.x_scale = float(np.ptp(expert_obs[:, 0])) or 1.0
-        self.y_scale = lane_width
+        self.y_scale = y_scale
 
     def __call__(self, b):
         nobs = b["next_obs"]
@@ -139,7 +143,7 @@ def train(model: str, train_scenes, val_scenes, cfg: Config, out_dir: str, seed:
     elif spec["disc"] == "airl":
         disc = AIRLDisc(pi, ac.d_hidden, ac.gamma, use_goal=ac.disc_goal)
     else:
-        rl_reward = RLReward(E["obs"], train_scenes[0].dt, train_scenes[0].meta["lane_width"])
+        rl_reward = RLReward(E["obs"], train_scenes[0].dt, ac.rl_goal_y_scale or train_scenes[0].meta["lane_width"])
     if disc is not None:
         d_opt = torch.optim.Adam(disc.parameters(), lr=ac.d_lr)
 
