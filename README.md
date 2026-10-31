@@ -35,8 +35,9 @@
 
 ```bash
 # 1. 数据
-python scripts/prepare_data.py --source ngsim --path <NGSIM.csv> --locations us-101 --out outputs/scenes.pkl
-python scripts/prepare_data.py --source ngsim --path <NGSIM.csv> --locations i-80 --all-test --out outputs/i80.pkl
+#    --path 可以是解压出的 trajectories-*.csv / .txt 所在目录，也可以是合并版 CSV
+python scripts/prepare_data.py --source ngsim --path <US-101 轨迹目录> --locations us-101 --out outputs/scenes.pkl
+python scripts/prepare_data.py --source ngsim --path <I-80 轨迹目录> --locations i-80 --all-test --out outputs/i80.pkl
 #    没有数据时可先用合成数据跑通流程：
 python scripts/prepare_data.py --source synthetic
 
@@ -54,7 +55,14 @@ python scripts/evaluate.py --scenes outputs/i80.pkl --models outputs/gcairl/best
 ## 数据
 
 论文只用了 NGSIM：US-101 共 164 条汇入轨迹（124 训练 / 40 测试），I-80 共 139 条（每次随机抽 40 条做迁移性测试）。
-NGSIM 是公开数据，在 data.transportation.gov 搜索 “Next Generation Simulation (NGSIM) Vehicle Trajectories” 导出 CSV。数据不随仓库分发。
+NGSIM 是公开数据，数据不随仓库分发。两种获取方式都支持：
+- 各地点的数据包，如 `US-101-LosAngeles-CA.zip`：解压其中的 `us-101-vehicle-trajectory-data.zip`，得到 3 个时段的 `trajectories-*.csv`（或 `.txt`）；
+- data.transportation.gov 上 “Next Generation Simulation (NGSIM) Vehicle Trajectories” 的合并版 CSV（含 Location 列）。
+
+US-101 的数据检查（3 个时段，共 4824 辆车）：
+- 有 6→5 换道的车辆共 282 辆，几乎全部从匝道（lane 7）进入，按车道序列分：7→6→5 有 131 辆，7→6→5→4… 有 128 辆，其余为来回换道等；
+- 按本仓库的规则提取到 273 个场景（剔除 3 个专家轨迹与他车重叠的），比论文的 164 条多。论文没有说明额外的筛选条件，这里保留全部；
+- 回放专家轨迹：成功率 1.0，碰撞率 0，平均速度 12.6 m/s，换道前后横向位置约为两条车道中心（车道线两侧各约 1.7 m）。
 
 ## 与论文的差异和假设
 
@@ -62,6 +70,7 @@ NGSIM 是公开数据，在 data.transportation.gov 搜索 “Next Generation Si
 
 | 项目 | 论文 | 本仓库 |
 |---|---|---|
+| US-101 汇入场景数 | 164（124 训练 / 40 测试） | 273（221 训练 / 12 验证 / 40 测试），见“数据”一节 |
 | 换道起止点检测 | 小波变换 | 横向速度阈值（0.1 m/s） |
 | Kalman 滤波参数 | 未给出 | 常加速度模型，参数见 `ngsim.py` 的 `KALMAN` |
 | I-80 车道 | 论文写 lane 6→5 | 照论文；NGSIM 官方说明中 I-80 的 lane 7 才是匝道，可通过 `lane_maps` 改为 7→6 |

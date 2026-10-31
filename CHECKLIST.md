@@ -4,7 +4,8 @@
 
 - [x] 下载目标论文 PDF（放在上级目录，不进仓库）
 - [x] 下载 AIRL 论文（2026，*AI for Transportation*），后续扩展用
-- [ ] **下载 NGSIM**（data.transportation.gov，“NGSIM Vehicle Trajectories”，导出包含 US-101 和 I-80 的 CSV），告诉我存放路径
+- [x] 下载 NGSIM US-101（`../data/US-101-LosAngeles-CA.zip`，完整）
+- [ ] **重新下载 `I-80-Emeryville-CA.zip`**：现在这个只有 82 MB，下载中断了，里面只有航拍图的前一部分，没有轨迹数据
 - [x] 建 GitHub 仓库：https://github.com/bianselong97/gc-airl-merging-reproduction
 - [ ] 确定目标：演示版还是完整复现加改进
 - [ ] （不急）highD / exiD：论文没用，只在做额外迁移实验时才需要申请
@@ -24,7 +25,8 @@
 - [x] 结果和调试记录写进 README
 
 ### 拿到 NGSIM 后
-- [ ] 跑 US-101 数据处理，核对汇入车辆数量（论文 164 条）和车道线位置
+- [x] NGSIM 适配器支持官方分时段文件（.csv / .txt）
+- [x] 跑 US-101 数据处理：273 个场景（论文 164 条，差异见 README），车道线位置、专家回放正常
 - [ ] 调 Kalman 参数和换道检测阈值
 - [ ] 训练全部模型，复现表 2（US-101）、表 3（消融）、表 4（I-80 迁移）
 - [ ] 分析和论文结果的差距，多随机种子
