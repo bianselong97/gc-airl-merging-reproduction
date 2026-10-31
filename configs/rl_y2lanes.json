@@ -1,1 +1,1 @@
-{"adv": {"rl_goal_y_scale": 7.32}}
+{"adv": {"rl_goal_y_scale": 7.32, "rl_merge_safety": false}}

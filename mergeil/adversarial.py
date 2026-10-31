@@ -94,10 +94,13 @@ class RLReward:
     车辆抢着并道、侧向剐蹭多；按 2 个车道宽及以上缩放时车辆基本不并道（见 README）。
     """
 
-    def __init__(self, expert_obs: np.ndarray, dt: float, y_scale: float):
+    def __init__(self, expert_obs: np.ndarray, dt: float, y_scale: float, merge_safety: bool = False,
+                 encroach: float = 1.5):
         self.dt = dt
         self.x_scale = float(np.ptp(expert_obs[:, 0])) or 1.0
         self.y_scale = y_scale
+        self.merge_safety = merge_safety
+        self.encroach = encroach
 
     def __call__(self, b):
         nobs = b["next_obs"]
@@ -105,6 +108,14 @@ class RLReward:
         gap, dvx = nobs[:, 4], nobs[:, 6]
         exists = (nobs[:, 4:8].abs().sum(-1) > 0) & (dvx < 0)
         ttc = torch.where(exists, gap / (-dvx).clamp_min(1e-3), torch.full_like(gap, 1e3))
+        if self.merge_safety:
+            # 车身接近或越过车道线时，安全项也看目标车道的前车 p 和后车 f（并排时 TTC 记为 0）
+            near = nobs[:, 1] > -self.encroach
+            for k, sign in ((8, 1.0), (12, -1.0)):  # p 的 gap > 0；f 的 gap < 0，接近时 dvx > 0
+                g, dv = sign * nobs[:, k], sign * nobs[:, k + 2]
+                ok = near & (nobs[:, k:k + 4].abs().sum(-1) > 0) & (dv < 0)
+                t = torch.where(ok, (g / (-dv).clamp_min(1e-3)).clamp_min(0), torch.full_like(g, 1e3))
+                ttc = torch.minimum(ttc, t)
         safety = torch.where(ttc < 4, ttc / 4, torch.ones_like(ttc))
         jerk = (b["act"] - b["prev_act"]) / self.dt / 10.0
         comfort = -(jerk ** 2).sum(-1)
@@ -143,7 +154,8 @@ def train(model: str, train_scenes, val_scenes, cfg: Config, out_dir: str, seed:
     elif spec["disc"] == "airl":
         disc = AIRLDisc(pi, ac.d_hidden, ac.gamma, use_goal=ac.disc_goal)
     else:
-        rl_reward = RLReward(E["obs"], train_scenes[0].dt, ac.rl_goal_y_scale or train_scenes[0].meta["lane_width"])
+        rl_reward = RLReward(E["obs"], train_scenes[0].dt, ac.rl_goal_y_scale or train_scenes[0].meta["lane_width"],
+                             merge_safety=ac.rl_merge_safety)
     if disc is not None:
         d_opt = torch.optim.Adam(disc.parameters(), lr=ac.d_lr)
 

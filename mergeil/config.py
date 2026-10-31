@@ -66,6 +66,7 @@ class AdvConfig:
     rank_trajs: int = 16           # 每次外层更新抽取的专家轨迹数
     score_weights: tuple = (1.0, 1.0, 5.0)  # 论文：排序得分权重 1-1-5
     rl_goal_y_scale: float = 0.0   # RL 目标项的横向缩放 (m)，0 = 车道宽；按验证集在 1/2/3 个车道宽和整个路面宽中选出
+    rl_merge_safety: bool = True   # RL 安全项在并道时也考虑目标车道前后车的 TTC（论文未说明 TTC 对应哪辆车；按验证集选出）
     eval_every: int = 10
     bc_init: str = ""
 
