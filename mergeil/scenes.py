@@ -40,21 +40,34 @@ class Scene:
         return self.ego[-1, :2]
 
 
-def detect_lane_change(vy: np.ndarray, cross: int, thr: float) -> tuple[int, int]:
-    """返回换道执行的 (开始, 结束) 下标。vy 为指向目标车道的横向速度。"""
+def detect_lane_change(vy: np.ndarray, cross: int, thr: float, gap: int = 0,
+                       stop: np.ndarray | None = None) -> tuple[int, int]:
+    """返回换道执行的 (开始, 结束) 下标。vy 为指向目标车道的横向速度。
+
+    gap：横向速度短暂低于阈值不超过 gap 帧时视为同一次换道（拥堵中常见的“停一下再并”）；
+    stop：布尔数组，结束点不越过第一个为 True 的帧（例如已开始换到下一条车道）。
+    """
+    moving = vy > thr
     i0 = cross
-    while i0 > 0 and vy[i0 - 1] > thr:
+    while i0 > 0 and moving[max(0, i0 - 1 - gap):i0].any():
         i0 -= 1
+    while i0 < cross and not moving[i0]:
+        i0 += 1
+    last = len(vy) - 1
+    if stop is not None and stop[cross:].any():
+        last = cross + int(np.argmax(stop[cross:]))
     i1 = cross
-    while i1 < len(vy) - 1 and vy[i1 + 1] > thr:
+    while i1 < last and moving[i1 + 1:i1 + 2 + gap].any():
         i1 += 1
+    while i1 > cross and not moving[i1]:
+        i1 -= 1
     return i0, i1
 
 
 def extract_scenes(df: pd.DataFrame, metas: dict, cfg: DataConfig) -> list[Scene]:
     from .env import collides
 
-    scenes, n_overlap = [], 0
+    scenes, n_overlap, n_short = [], 0, 0
     for group, g in df.groupby("group"):
         meta = metas[group]
         data_dt = meta["data_dt"]
@@ -76,11 +89,20 @@ def extract_scenes(df: pd.DataFrame, metas: dict, cfg: DataConfig) -> list[Scene
             if len(after) == 0:
                 continue
             cross = int(after[0])
-            i0, i1 = detect_lane_change(ev.vy.to_numpy(), cross, cfg.lc_vy_threshold)
+            i0, i1 = detect_lane_change(ev.vy.to_numpy(), cross, cfg.lc_vy_threshold,
+                                        gap=int(round(cfg.lc_gap_s / data_dt)),
+                                        stop=ys > line + meta["lane_width"])
+            far = np.where(ys[cross:cross + int(round(cfg.lc_max_after_cross_s / data_dt))]
+                           >= line + cfg.lc_end_offset)[0]
+            if len(far):
+                i1 = max(i1, cross + int(far[0]))
             s = max(0, i0 - int(round(cfg.pre_lc_s / data_dt)))
             e = min(len(ev) - 1, i1 + int(round(cfg.post_lc_s / data_dt)))
             seg = ev.iloc[s:e + 1:stride]
             if len(seg) < cfg.min_scene_steps or ys[s] > line:
+                continue
+            if seg.y.max() < line + cfg.min_cross_m:
+                n_short += 1  # 专家没有越过车道线足够远，成功判定无从谈起
                 continue
             if (np.diff(seg.frame.to_numpy()) != stride).any():
                 continue  # 轨迹有缺帧，跳过
@@ -101,6 +123,8 @@ def extract_scenes(df: pd.DataFrame, metas: dict, cfg: DataConfig) -> list[Scene
                                 extra={"lc_start": (i0 - s) // stride, "lc_end": (i1 - s) // stride}))
     if n_overlap:
         print(f"剔除 {n_overlap} 个专家轨迹与他车重叠的场景")
+    if n_short:
+        print(f"剔除 {n_short} 个专家没有越过车道线 {cfg.min_cross_m} m 的场景")
     return scenes
 
 

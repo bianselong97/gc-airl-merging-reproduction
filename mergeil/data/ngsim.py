@@ -26,7 +26,7 @@ import re
 import numpy as np
 import pandas as pd
 
-from .common import compute_group_meta, kalman_smooth_df, validate
+from .common import compute_group_meta, kalman_smooth_df, straighten_lanes, validate
 
 FT = 0.3048
 DATA_DT = 0.1
@@ -113,6 +113,7 @@ def load(path: str, locations=("us-101",), lane_width: float = 3.66,
             "length": dp.v_length * FT, "width": dp.v_Width * FT,
             "lane": dp.Lane_ID.map(lane_maps[loc]).fillna(-1).astype(int),
         })
+        g = straighten_lanes(g)
         g = kalman_smooth_df(g, DATA_DT, **KALMAN)
         metas[group] = compute_group_meta(g, DATA_DT, lane_width)
         frames.append(g)

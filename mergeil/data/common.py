@@ -110,6 +110,23 @@ def kalman_smooth_df(df: pd.DataFrame, data_dt: float, q_x: float, r_x: float,
     return df
 
 
+def straighten_lanes(df: pd.DataFrame, ref_lane: int = 1, bin_m: float = 10.0) -> pd.DataFrame:
+    """把道路“拉直”：按纵向位置分段，减去参考车道中心线相对其中位数的横向偏移。
+
+    真实道路的车道中心沿纵向会漂移（NGSIM US-101 约 ±0.5 m），而车道线位置和成功判定
+    （越线 1 m）都假设车道线是一条直线。应在 Kalman 平滑之前调用。
+    """
+    ref = df[df.lane == ref_lane]
+    if ref.empty:
+        return df
+    bins = np.floor(ref.x / bin_m)
+    prof = ref.y.groupby(bins).median()
+    prof = prof[ref.groupby(bins).size() >= 50]  # 点数太少的分段不可靠
+    centers = (prof.index.values + 0.5) * bin_m
+    offset = np.interp(df.x, centers, prof.values - np.median(prof.values))
+    return df.assign(y=df.y - offset)
+
+
 def compute_group_meta(df: pd.DataFrame, data_dt: float, lane_width: float,
                        ramp_end_x: float | None = None) -> dict:
     """由车道编码估计道路几何：车道线位置（加速车道与目标车道之间）等。"""

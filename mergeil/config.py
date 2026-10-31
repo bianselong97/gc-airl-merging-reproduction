@@ -12,6 +12,10 @@ class DataConfig:
     env_dt: float = 0.1            # 论文：更新步长 0.1 s
     neighbor_range: float = 100.0  # 只保留纵向距离在此范围内的周围车辆 (m)
     lc_vy_threshold: float = 0.1   # 换道起止点检测的横向速度阈值 (m/s)；论文用小波变换，这里用阈值法近似
+    lc_gap_s: float = 1.0          # 横向速度短暂低于阈值不超过此时长时，仍算同一次换道
+    lc_end_offset: float = 1.5     # 换道结束点至少延伸到越过车道线这么远 (m)，拥堵中横向漂移很慢，单靠速度阈值会过早结束
+    lc_max_after_cross_s: float = 8.0  # 上述延伸最多到越线后这么久
+    min_cross_m: float = 1.0       # 专家在场景内必须越过车道线这么远，否则剔除（与 env.goal_offset 一致）
     pre_lc_s: float = 2.0          # 论文：换道执行前保留 2 s
     post_lc_s: float = 2.0         # 论文：换道执行后保留 2 s
     min_scene_steps: int = 20
