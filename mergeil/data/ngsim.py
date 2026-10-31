@@ -55,25 +55,32 @@ def _guess_location(path: str, locations) -> str:
     raise ValueError(f"无法从路径 {path} 判断地点，请只传一个 --locations")
 
 
+def _canonical(df: pd.DataFrame) -> pd.DataFrame:
+    """列名统一成 USE 中的写法（不同来源大小写不一，如 v_Length / v_length、API 导出的全小写列名）。"""
+    names = {c.lower(): c for c in USE + ["Location"]}
+    return df.rename(columns={c: names[c.lower()] for c in df.columns if c.lower() in names})
+
+
 def _read_period_file(path: str) -> pd.DataFrame:
     if path.endswith(".txt"):
         df = pd.read_csv(path, sep=r"\s+", header=None, names=TXT_COLUMNS, usecols=range(18))
     else:
-        df = pd.read_csv(path).rename(columns={"v_Length": "v_length"})
+        df = _canonical(pd.read_csv(path))
     return df[USE].drop_duplicates(["Vehicle_ID", "Global_Time"])
 
 
 def _periods(path: str, locations, period_gap_s: float):
     """依次给出 (地点, 时段名, 该时段的原始数据)。"""
     if os.path.isdir(path):
-        files = sorted(glob.glob(os.path.join(path, "**", "trajectories-*.csv"), recursive=True))
-        files = files or sorted(glob.glob(os.path.join(path, "**", "trajectories-*.txt"), recursive=True))
+        # 优先用 .txt：官方包里的 .csv 被 Excel 截断在 1,048,576 行
+        files = sorted(glob.glob(os.path.join(path, "**", "trajectories-*.txt"), recursive=True))
+        files = files or sorted(glob.glob(os.path.join(path, "**", "trajectories-*.csv"), recursive=True))
         if not files:
             raise FileNotFoundError(f"{path} 下没有 trajectories-*.csv / .txt")
     else:
         files = [path]
     combined = len(files) == 1 and not files[0].endswith(".txt") and \
-        "Location" in pd.read_csv(files[0], nrows=0).columns
+        "location" in [c.lower() for c in pd.read_csv(files[0], nrows=0).columns]
     if not combined:
         for f in files:
             loc = _guess_location(os.path.abspath(f), locations)
@@ -81,8 +88,8 @@ def _periods(path: str, locations, period_gap_s: float):
             yield loc, name, _read_period_file(f)
         return
 
-    raw = pd.read_csv(files[0], usecols=USE + ["Location"])
-    raw = raw[raw.Location.isin(locations)].drop_duplicates(["Location", "Vehicle_ID", "Global_Time"])
+    raw = _canonical(pd.read_csv(files[0], usecols=lambda c: c.lower() in {u.lower() for u in USE + ["Location"]}))
+    raw = raw[raw.Location.str.lower().isin(locations)].drop_duplicates(["Location", "Vehicle_ID", "Global_Time"])
     if raw.empty:
         raise ValueError(f"CSV 中没有找到地点 {locations}")
     for loc, d in raw.groupby("Location"):
