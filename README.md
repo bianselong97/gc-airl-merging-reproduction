@@ -109,6 +109,9 @@ mergeil/
   lstm.py, bc.py  监督学习基线
   metrics.py, evaluate.py  论文指标与评估
 scripts/       prepare_data / train / evaluate / animate；run_us101.sh 跑全部实验
+configs/       实验用的配置覆盖（如 goal30.json）
+docs/          结果对比图
+picture/       仿真动画（scripts/animate.py 生成的 GIF）
 ```
 
 ## 结果
@@ -157,19 +160,19 @@ scripts/       prepare_data / train / evaluate / animate；run_us101.sh 跑全�
 ```bash
 # 各测试场景每个模型的结果（成功 / 碰撞 / 未汇入），用来挑场景
 python scripts/animate.py --scenes outputs/us101.pkl --models <A>/best.pt <B>/best.pt --summary
-python scripts/animate.py --scenes outputs/us101.pkl --models <A>/best.pt <B>/best.pt --scene 5 --dpi 100 --out docs/anim_scene5.gif
+python scripts/animate.py --scenes outputs/us101.pkl --models <A>/best.pt <B>/best.pt --scene 5 --dpi 100 --out picture/anim_scene5.gif
 ```
 
 测试场景 5：目标奖励 30 的 GC-AIRL 找到空隙汇入；AIRL 并入目标车道时车速比后车慢、距离又近，被后车追尾。
 
-![测试场景 5](docs/anim_scene5.gif)
+![测试场景 5](picture/anim_scene5.gif)
 
 GC-AIRL 的两种典型失败。场景 7：在加速车道里减速等空隙，后方约 15 m/s 的车追上来擦撞；
 场景 10：比真实司机开得快，一直没找到空隙，加速车道走到头也没有并入。两次碰撞都和回放车辆不会避让有关。
 
-![测试场景 7](docs/anim_scene7.gif)
+![测试场景 7](picture/anim_scene7.gif)
 
-![测试场景 10](docs/anim_scene10.gif)
+![测试场景 10](picture/anim_scene10.gif)
 
 种子 0 的模型在 40 个测试场景上（策略均值）：GC-AIRL（目标奖励 30）成功 29、碰撞 3、未汇入 8；AIRL 成功 25、碰撞 6、未汇入 9。
 
