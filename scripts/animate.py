@@ -3,7 +3,7 @@
     # 先看每个测试场景各模型的结果，挑场景
     python scripts/animate.py --scenes outputs/us101.pkl --models A/best.pt B/best.pt --summary
     # 生成 GIF
-    python scripts/animate.py --scenes outputs/us101.pkl --models A/best.pt B/best.pt --scene 7 --out picture/merge_7.gif
+    python scripts/animate.py --scenes outputs/us101.pkl --models A/best.pt B/best.pt --scene 7 --out docs/merge_7.gif
 
 默认用策略均值（确定性动作），--stochastic 改为随机采样。
 """
@@ -112,7 +112,7 @@ def main():
     ap.add_argument("--fps", type=int, default=10)
     ap.add_argument("--dpi", type=int, default=72)
     ap.add_argument("--config", default="")
-    ap.add_argument("--out", default="picture/merge.gif")
+    ap.add_argument("--out", default="outputs/merge.gif")
     args = ap.parse_args()
     cfg = Config.load(args.config)
     scenes = S.load(args.scenes)[args.split]
